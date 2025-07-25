@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>OPQ Library</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            min-height: 100vh;
+            color: #f5f6fa;
+            background: linear-gradient(120deg, #181c24 0%, #232a34 60%, #1a1d2b 100%);
+            background-attachment: fixed;
+        }
+        .modal-content {
+            background: #232a34;
+            color: #f5f6fa;
+            border-radius: 12px;
+        }
+        .modal-header, .modal-footer {
+            border-color: #333;
+        }
+        .library-header {
+            font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #f5f6fa;
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .table thead th {
+            background: #232a34;
+            color: #f5f6fa;
+            font-weight: 600;
+        }
+        .table-striped > tbody > tr:nth-of-type(odd) {
+            background-color: #232a34;
+        }
+        .table-striped > tbody > tr:nth-of-type(even) {
+            background-color: #181c24;
+        }
+        .btn {
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: box-shadow 0.2s, background 0.2s;
+        }
+        .btn:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+            filter: brightness(1.08);
+        }
+        .card {
+            background: #232a34;
+            color: #f5f6fa;
+            border-radius: 14px;
+        }
+        .card-title, .card-subtitle {
+            color: #f5f6fa;
+        }
+        .form-control, .form-select {
+            background: #232a34;
+            color: #f5f6fa;
+            border: 1px solid #444;
+        }
+        .form-control:focus, .form-select:focus {
+            background: #232a34;
+            color: #f5f6fa;
+            border-color: #5bc0de;
+        }
+        .search-bar {
+            margin-bottom: 1.5rem;
+        }
+        .view-toggle {
+            margin-bottom: 1rem;
+        }
+        .table td, .table th {
+            vertical-align: middle;
+        }
+        .footer {
+            color: #aaa;
+            margin-top: 2rem;
+            text-align: center;
+        }
+        .table {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10);
+            background: #232a34;
+            transition: box-shadow 0.3s;
+        }
+        .table tbody tr {
+            transition: background 0.2s;
+        }
+        .table tbody tr:hover {
+            background: #232a34cc;
+        }
+        .btn {
+            border-radius: 8px;
+            transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+        }
+        .btn:focus, .btn:active {
+            outline: none;
+            box-shadow: 0 0 0 2px #5bc0de55;
+        }
+        .modal-content {
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.18);
+            transition: box-shadow 0.3s;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+        }
+        .badge {
+            border-radius: 6px;
+            font-size: 0.95em;
+        }
+        .view-toggle button {
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body aria-label="OPQ Library Main Page">
+<div id="toastContainer" aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;"></div>
+<!-- Logout and welcome message for authenticated users, now aligned below header -->
+<div class="d-flex justify-content-end align-items-center mb-4 gap-3" style="margin-top: 0.5rem;">
+    <div th:if="${#authentication != null and #authentication.authenticated and #authentication.name != 'anonymousUser'}" class="me-2">
+        <span class="fw-bold">Welcome,</span> <span th:text="${#authentication.name}"></span>!
+    </div>
+    <form th:action="@{/logout}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Logout</button>
+    </form>
+</div>
+<div class="container-fluid px-4 py-4" style="background: none;">
+    <div class="library-header text-center">Welcome to OPQ Library</div>
+    <!-- Show/Hide Books Toggle Button -->
+    <!-- Removed Hide Books button and feature -->
+    <!-- Featured Book (auto-toggling) -->
+    <div class="mb-4 d-flex justify-content-center" style="overflow-x: auto;">
+        <div id="featuredBookInfo" style="min-width: 400px; max-width: 900px; width: 100%; background: linear-gradient(90deg, #232a34 60%, #2d3a4a 100%); color: #fff; border-radius: 18px; box-shadow: 0 4px 24px 0 rgba(0,0,0,0.18); padding: 2rem 2.5rem; margin: 0 auto; display: flex; flex-direction: column; align-items: flex-start; transition: background 0.5s;"></div>
+    </div>
+    <!-- Add Book Button and Modal -->
+    <div class="mb-3 d-flex justify-content-end">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addBookModal"><i class="bi bi-plus-circle"></i> Add Book</button>
+    </div>
+    <div class="modal fade" id="addBookModal" tabindex="-1" aria-labelledby="addBookModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/}" method="post" id="addBookForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addBookModalLabel">Add New Book</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="addTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="addTitle" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addAuthor" class="form-label">Author</label>
+                            <input type="text" class="form-control" id="addAuthor" name="author" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addGenre" class="form-label">Genre</label>
+                            <input type="text" class="form-control" id="addGenre" name="genre">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addSummary" class="form-label">Summary</label>
+                            <textarea class="form-control" id="addSummary" name="summary"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addRating" class="form-label">Rating</label>
+                            <select class="form-select" id="addRating" name="rating">
+                                <option value="">Select Rating</option>
+                                <option value="5">5</option>
+                                <option value="4">4</option>
+                                <option value="3">3</option>
+                                <option value="2">2</option>
+                                <option value="1">1</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addPublishedOn" class="form-label">Published On</label>
+                            <input type="date" class="form-control" id="addPublishedOn" name="publishedOn">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Add Book</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Edit Book Modal -->
+    <div class="modal fade" id="editBookModal" tabindex="-1" aria-labelledby="editBookModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="editBookForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editBookModalLabel">Edit Book</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="editIndex" name="index">
+                        <div class="mb-3">
+                            <label for="editTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="editTitle" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editAuthor" class="form-label">Author</label>
+                            <input type="text" class="form-control" id="editAuthor" name="author" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editGenre" class="form-label">Genre</label>
+                            <input type="text" class="form-control" id="editGenre" name="genre">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editSummary" class="form-label">Summary</label>
+                            <textarea class="form-control" id="editSummary" name="summary"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRating" class="form-label">Rating</label>
+                            <select class="form-select" id="editRating" name="rating">
+                                <option value="">Select Rating</option>
+                                <option value="5">5</option>
+                                <option value="4">4</option>
+                                <option value="3">3</option>
+                                <option value="2">2</option>
+                                <option value="1">1</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPublishedOn" class="form-label">Published On</label>
+                            <input type="date" class="form-control" id="editPublishedOn" name="publishedOn">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Save Changes</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div id="booksSection">
+        <!-- Search Bar -->
+        <div class="row search-bar">
+            <div class="col-md-3 mb-2">
+                <label for="searchTitle" class="form-label">Book Title</label>
+                <input type="text" class="form-control" id="searchTitle" placeholder="e.g. Linux">
+            </div>
+            <div class="col-md-3 mb-2">
+                <label for="searchAuthor" class="form-label">Author Name</label>
+                <input type="text" class="form-control" id="searchAuthor" placeholder="e.g. Linus Torvalds">
+            </div>
+            <div class="col-md-3 mb-2">
+                <label for="searchGenre" class="form-label">Genre</label>
+                <input type="text" class="form-control" id="searchGenre" placeholder="e.g. DevOps">
+            </div>
+            <div class="col-md-2 mb-2">
+                <label for="searchRating" class="form-label">Rating</label>
+                <select class="form-select" id="searchRating" aria-label="Rating" title="Select Rating">
+                    <option value="" selected>All Ratings</option>
+                    <option value="5">5</option>
+                    <option value="4">4</option>
+                    <option value="3">3</option>
+                    <option value="2">2</option>
+                    <option value="1">1</option>
+                </select>
+            </div>
+            <div class="col-md-1 mb-2 d-flex align-items-end">
+                <button class="btn btn-info w-100">Search</button>
+            </div>
+        </div>
+        <!-- View Toggle -->
+        <div class="d-flex justify-content-end view-toggle">
+            <button id="listViewBtn" class="btn btn-outline-info btn-sm me-2">List View</button>
+            <button id="cardViewBtn" class="btn btn-outline-light btn-sm">Card View</button>
+        </div>
+        <!-- List View -->
+        <div id="bookListView">
+            <div style="max-height: 400px; overflow-y: auto; border-radius: 8px;">
+                <table class="table table-dark table-striped align-middle w-100">
+                    <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Genre</th>
+                        <th>Rating</th>
+                        <th>Summary</th>
+                        <th>Published On</th>
+                        <th>Status</th>
+                        <th>Borrower</th>
+                        <th>Borrowed Date</th>
+                        <th>Due Date</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="book,iter : ${books}">
+                        <td th:text="${book.title}"></td>
+                        <td th:text="${book.author}"></td>
+                        <td th:text="${book.genre}"></td>
+                        <td th:text="${book.rating}"></td>
+                        <td th:text="${book.summary}" class="book-summary"></td>
+                        <td th:text="${book.publishedOnFormatted}" class="book-published"></td>
+                        <td>
+                            <span th:if="${book.borrowed}" class="badge bg-danger">Borrowed</span>
+                            <span th:if="${!book.borrowed}" class="badge bg-success">Available</span>
+                            <span th:if="${book.isOverdue()}" class="badge bg-warning text-dark">Overdue</span>
+                            <span th:if="${book.read}" class="badge bg-primary ms-1">Read</span>
+                        </td>
+                        <td th:text="${book.borrowed} ? ${book.borrower} : '-'" class="borrower-cell"></td>
+                        <td th:text="${book.borrowed} ? ${book.borrowedDate} : '-'" class="borrowed-date-cell"></td>
+                        <td th:text="${book.borrowed} ? ${book.dueDate} : '-'" class="due-date-cell"></td>
+                        <td class="d-flex flex-wrap">
+                            <button th:if="${!book.borrowed}" type="button" class="btn btn-outline-info btn-sm me-1 mb-1 borrow-btn" th:attr="data-index=${iter.index}" data-bs-toggle="modal" data-bs-target="#borrowBookModal"><i class="bi bi-box-arrow-in-right"></i> Borrow</button>
+                            <button th:if="${book.borrowed}" type="button" class="btn btn-outline-danger btn-sm me-1 mb-1 return-btn" th:attr="data-index=${iter.index}"><i class="bi bi-arrow-counterclockwise"></i> Return</button>
+                            <button type="button" class="btn btn-info btn-sm me-1 mb-1" data-bs-toggle="modal" th:attr="data-bs-target='#detailsModal'" th:attrappend="data-index=${iter.index},data-summary=${book.summary}"><i class="bi bi-info-circle"></i> Details</button>
+                            <form th:action="@{${book.read} ? '/unmarkRead/' + ${iter.index} : '/markRead/' + ${iter.index}}" method="post" class="me-1 mb-1 toggle-read-form">
+                                <button type="submit" th:classappend="${book.read} ? 'btn-outline-success' : 'btn-success'" class="btn btn-sm"><i class="bi bi-check2-circle"></i> <span th:text="${book.read} ? 'Unmark Read' : 'Mark as Read'"></span></button>
+                            </form>
+                            <form th:action="@{${book.progress} ? '/unmarkProgress/' + ${iter.index} : '/markProgress/' + ${iter.index}}" method="post" class="me-1 mb-1 toggle-progress-form">
+                                <button type="submit" th:classappend="${book.progress} ? 'btn-outline-warning' : 'btn-warning'" class="btn btn-sm"><i class="bi bi-hourglass-split"></i> <span th:text="${book.progress} ? 'Unmark Progress' : 'Mark In Progress'"></span></button>
+                            </form>
+                            <form th:action="@{'/delete/' + ${iter.index}}" method="post" class="me-1 mb-1 delete-form">
+                                <button type="button" class="btn btn-danger btn-sm delete-btn"><i class="bi bi-trash"></i> Delete</button>
+                            </form>
+                            <button type="button" class="btn btn-secondary btn-sm mb-1" data-bs-toggle="modal" th:attr="data-bs-target='#editBookModal'" th:attrappend="data-index=${iter.index},data-title=${book.title},data-author=${book.author},data-genre=${book.genre},data-rating=${book.rating},data-summary=${book.summary},data-published=${book.publishedOnFormatted}"><i class="bi bi-pencil-square"></i> Edit</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Card View -->
+        <div id="bookCardView" style="display: none;">
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                <div class="col" th:each="book,iter : ${books}">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="${book.title}"></h5>
+                            <div class="mb-2"><strong>Author:</strong> <span th:text="${book.author}"></span></div>
+                            <p class="card-text mb-1"><strong>Genre:</strong> <span th:text="${book.genre}"></span></p>
+                            <p class="card-text mb-1"><strong>Rating:</strong> <span th:text="${book.rating}"></span></p>
+                            <p class="card-text mb-1"><strong>Summary:</strong> <span th:text="${book.summary}"></span></p>
+                            <p class="card-text mb-1"><strong>Published:</strong> <span th:text="${book.publishedOnFormatted}"></span></p>
+                            <p class="card-text mb-1"><strong>Status:</strong> <span th:text="${book.borrowed} ? 'Borrowed' : 'Available'" class="badge" th:classappend="${book.borrowed} ? 'bg-danger' : 'bg-success'"></span></p>
+                            <p class="card-text mb-1"><strong>Borrower:</strong> <span th:text="${book.borrower != null} ? ${book.borrower} : '-'" class="borrower-cell"></span></p>
+                            <p class="card-text mb-1"><strong>Borrowed Date:</strong> <span th:text="${book.borrowedDate != null} ? ${book.borrowedDate} : '-'" class="borrowed-date-cell"></span></p>
+                            <p class="card-text mb-1"><strong>Due Date:</strong> <span th:text="${book.dueDate != null} ? ${book.dueDate} : '-'" class="due-date-cell"></span></p>
+                            <div class="mt-2 d-flex flex-wrap">
+                                <button th:if="${!book.borrowed}" type="button" class="btn btn-outline-info btn-sm me-1 mb-1 borrow-btn" th:attr="data-index=${iter.index}" data-bs-toggle="modal" data-bs-target="#borrowBookModal"><i class="bi bi-box-arrow-in-right"></i> Borrow</button>
+                                <button th:if="${book.borrowed}" type="button" class="btn btn-outline-danger btn-sm me-1 mb-1 return-btn" th:attr="data-index=${iter.index}"><i class="bi bi-arrow-counterclockwise"></i> Return</button>
+                                <button type="button" class="btn btn-info btn-sm me-1 mb-1" data-bs-toggle="modal" th:attr="data-bs-target='#detailsModal'" th:attrappend="data-index=${iter.index},data-summary=${book.summary}"><i class="bi bi-info-circle"></i> Details</button>
+                                <form th:action="@{${book.read} ? '/unmarkRead/' + ${iter.index} : '/markRead/' + ${iter.index}}" method="post" class="me-1 mb-1 toggle-read-form">
+                                    <button type="submit" th:classappend="${book.read} ? 'btn-outline-success' : 'btn-success'" class="btn btn-sm"><i class="bi bi-check2-circle"></i> <span th:text="${book.read} ? 'Unmark Read' : 'Mark as Read'"></span></button>
+                                </form>
+                                <form th:action="@{${book.progress} ? '/unmarkProgress/' + ${iter.index} : '/markProgress/' + ${iter.index}}" method="post" class="me-1 mb-1 toggle-progress-form">
+                                    <button type="submit" th:classappend="${book.progress} ? 'btn-outline-warning' : 'btn-warning'" class="btn btn-sm"><i class="bi bi-hourglass-split"></i> <span th:text="${book.progress} ? 'Unmark Progress' : 'Mark In Progress'"></span></button>
+                                </form>
+                                <form th:action="@{'/delete/' + ${iter.index}}" method="post" class="me-1 mb-1 delete-form">
+                                    <button type="button" class="btn btn-danger btn-sm delete-btn"><i class="bi bi-trash"></i> Delete</button>
+                                </form>
+                                <button type="button" class="btn btn-secondary btn-sm mb-1" data-bs-toggle="modal" th:attr="data-bs-target='#editBookModal'" th:attrappend="data-index=${iter.index},data-title=${book.title},data-author=${book.author},data-genre=${book.genre},data-rating=${book.rating},data-summary=${book.summary},data-published=${book.publishedOnFormatted}"><i class="bi bi-pencil-square"></i> Edit</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Borrow Book Modal -->
+        <div class="modal fade" id="borrowBookModal" tabindex="-1" aria-labelledby="borrowBookModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form th:action="@{/borrow}" method="post" id="borrowBookForm">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="borrowBookModalLabel">Borrow Book</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="index" id="borrowIndex" />
+                            <div class="mb-3">
+                                <label for="borrower" class="form-label">Borrower Name</label>
+                                <input type="text" class="form-control" name="borrower" id="borrower" required />
+                            </div>
+                            <div class="mb-3">
+                                <label for="borrowedDate" class="form-label">Borrowed Date</label>
+                                <input type="date" class="form-control" name="borrowedDate" id="borrowedDate" required />
+                            </div>
+                            <div class="mb-3">
+                                <label for="dueDate" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" name="dueDate" id="dueDate" required />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-info">Borrow</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Details Modal -->
+        <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="detailsModalLabel">Book Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h4 id="detailsTitle"></h4>
+                        <p><strong>Author:</strong> <span id="detailsAuthor"></span></p>
+                        <p><strong>Genre:</strong> <span id="detailsGenre"></span></p>
+                        <p><strong>Rating:</strong> <span id="detailsRating"></span></p>
+                        <p><strong>Summary:</strong> <span id="detailsSummary"></span></p>
+                        <p><strong>Published:</strong> <span id="detailsPublished"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this book?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer">© 2025 OPQ Library</div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Structured logging function
+    function logAction(action, details) {
+        const logEntry = {
+            timestamp: new Date().toISOString(),
+            action,
+            details
+        };
+        // Log to browser console (for dev/debug)
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('[UI LOG]', logEntry);
+        }
+        // Also send to backend for audit/analytics
+        // Backend should provide a POST /api/log endpoint that accepts JSON logEntry
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(logEntry)
+        }).catch(() => {}); // Ignore errors for logging
+    }
+    // Toast feedback function
+    function showToast(message, type = 'info') {
+        const toastId = 'toast-' + Date.now();
+        const icon = type === 'success' ? 'bi-check-circle-fill' : type === 'error' ? 'bi-x-circle-fill' : 'bi-info-circle-fill';
+        const bg = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+        const html = `<div id="${toastId}" class="toast align-items-center text-white ${bg} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body"><i class="bi ${icon} me-2"></i>${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>`;
+        const container = document.getElementById('toastContainer');
+        container.insertAdjacentHTML('beforeend', html);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+    // Enhance all user actions with logging and feedback
+    document.getElementById('listViewBtn').addEventListener('click', function() {
+        logAction('toggle_view', { view: 'list' });
+        showToast('Switched to List View', 'info');
+        document.getElementById('bookListView').style.display = '';
+        document.getElementById('bookCardView').style.display = 'none';
+        this.classList.add('btn-info');
+        this.classList.remove('btn-outline-info');
+        document.getElementById('cardViewBtn').classList.remove('btn-light');
+        document.getElementById('cardViewBtn').classList.add('btn-outline-light');
+    });
+    document.getElementById('cardViewBtn').addEventListener('click', function() {
+        logAction('toggle_view', { view: 'card' });
+        showToast('Switched to Card View', 'info');
+        document.getElementById('bookListView').style.display = 'none';
+        document.getElementById('bookCardView').style.display = '';
+        this.classList.add('btn-light');
+        this.classList.remove('btn-outline-light');
+        document.getElementById('listViewBtn').classList.remove('btn-info');
+        document.getElementById('listViewBtn').classList.add('btn-outline-info');
+    });
+
+    // Borrow modal: set book index
+    document.querySelectorAll('.borrow-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var index = btn.getAttribute('data-index');
+            document.getElementById('borrowIndex').value = index;
+        });
+    });
+
+    // Always auto-scroll featured book info to right on load if overflow
+    window.addEventListener('DOMContentLoaded', function() {
+        var featured = document.getElementById('featuredBookInfo');
+        if (featured && featured.scrollWidth > featured.clientWidth) {
+            featured.scrollLeft = featured.scrollWidth;
+        }
+    });
+
+    // Details modal: fill and show details
+    document.querySelectorAll('button[data-bs-target="#detailsModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var row = btn.closest('tr');
+            if (row) {
+                var cells = row.querySelectorAll('td');
+                document.getElementById('detailsTitle').textContent = cells[0]?.textContent || '';
+                document.getElementById('detailsAuthor').textContent = cells[1]?.textContent || '';
+                document.getElementById('detailsGenre').textContent = cells[2]?.textContent || '';
+                document.getElementById('detailsRating').textContent = cells[3]?.textContent || '';
+                document.getElementById('detailsSummary').textContent = cells[4]?.textContent || '';
+                document.getElementById('detailsPublished').textContent = cells[5]?.textContent || '';
+            } else {
+                var card = btn.closest('.card');
+                if (card) {
+                    document.getElementById('detailsTitle').textContent = card.querySelector('.card-title')?.textContent || '';
+                    document.getElementById('detailsAuthor').textContent = card.querySelector('.card-text strong:contains("Author")')?.nextSibling?.textContent.trim() || '';
+                    document.getElementById('detailsGenre').textContent = card.querySelector('.card-text strong:contains("Genre")')?.nextSibling?.textContent.trim() || '';
+                    document.getElementById('detailsRating').textContent = card.querySelector('.card-text strong:contains("Rating")')?.nextSibling?.textContent.trim() || '';
+                    document.getElementById('detailsSummary').textContent = card.querySelector('.card-text strong:contains("Summary")')?.nextSibling?.textContent.trim() || '';
+                    document.getElementById('detailsPublished').textContent = card.querySelector('.card-text strong:contains("Published")')?.nextSibling?.textContent.trim() || '';
+                }
+            }
+        });
+    });
+
+    // Auto-toggle featured book every 3 seconds (modern card look)
+    window.addEventListener('DOMContentLoaded', function() {
+        var featured = document.getElementById('featuredBookInfo');
+        var bookEls = document.querySelectorAll('#bookListView tbody tr');
+        var idx = 0;
+        function renderFeatured() {
+            if (!bookEls.length) return;
+            var cells = bookEls[idx].querySelectorAll('td');
+            featured.innerHTML =
+                '<div style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.01em;">Featured Book</div>' +
+                '<div style="font-size: 1.7rem; font-weight: 800; margin-bottom: 0.2rem; color: #5bc0de;">' + (cells[0]?.textContent || '') + '</div>' +
+                '<div style="font-size: 1.1rem; margin-bottom: 0.2rem;">by <span style="font-weight: 600; color: #f5f6fa;">' + (cells[1]?.textContent || '') + '</span></div>' +
+                '<div style="margin-bottom: 0.2rem;"><strong>Genre:</strong> <span style="color: #f5f6fa;">' + (cells[2]?.textContent || '') + '</span></div>' +
+                '<div style="margin-bottom: 0.2rem;"><strong>Rating:</strong> <span style="color: #ffe066;">' + (cells[3]?.textContent || '') + '</span></div>' +
+                '<div style="margin-bottom: 0.2rem;"><strong>Summary:</strong> <span style="color: #f5f6fa;">' + (cells[4]?.textContent || '') + '</span></div>' +
+                '<div><strong>Published:</strong> <span style="color: #f5f6fa;">' + (cells[5]?.textContent || '') + '</span></div>';
+            if (featured.scrollWidth > featured.clientWidth) {
+                featured.scrollLeft = featured.scrollWidth;
+            }
+        }
+        renderFeatured();
+        setInterval(function() {
+            idx = (idx + 1) % bookEls.length;
+            renderFeatured();
+        }, 3000);
+    });
+
+    // Delete confirmation modal logic
+    let deleteFormToSubmit = null;
+    document.querySelectorAll('.delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            deleteFormToSubmit = btn.closest('form');
+            var modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            modal.show();
+        });
+    });
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (deleteFormToSubmit) {
+            deleteFormToSubmit.submit();
+            deleteFormToSubmit = null;
+        }
+        var modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+        modal.hide();
+    });
+    // Mark/Unmark as Read/In Progress AJAX (no reload, modern UI)
+    function updateStatusBadge(row, type) {
+        var statusCell = row.querySelector('td:nth-child(7)');
+        if (!statusCell) return;
+        // Remove all status badges
+        statusCell.querySelectorAll('.badge.bg-primary, .badge.bg-warning, .badge.bg-warning.text-dark').forEach(b => b.remove());
+        if (type === 'read') {
+            var badge = document.createElement('span');
+            badge.className = 'badge bg-primary ms-1';
+            badge.textContent = 'Read';
+            statusCell.appendChild(badge);
+        } else if (type === 'progress') {
+            var badge = document.createElement('span');
+            badge.className = 'badge bg-warning text-dark ms-1';
+            badge.textContent = 'In Progress';
+            statusCell.appendChild(badge);
+        }
+    }
+    document.querySelectorAll('.toggle-read-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var url = form.getAttribute('action');
+            fetch(url, { method: 'POST' }).then(function(resp) {
+                if (resp.ok) {
+                    var row = form.closest('tr') || form.closest('.card');
+                    if (row) {
+                        // Toggle button text and style
+                        var btn = form.querySelector('button');
+                        if (btn) {
+                            if (btn.classList.contains('btn-success')) {
+                                btn.classList.remove('btn-success');
+                                btn.classList.add('btn-outline-success');
+                                btn.querySelector('span').textContent = 'Unmark Read';
+                            } else {
+                                btn.classList.remove('btn-outline-success');
+                                btn.classList.add('btn-success');
+                                btn.querySelector('span').textContent = 'Mark as Read';
+                            }
+                        }
+                        updateStatusBadge(row, btn.classList.contains('btn-outline-success') ? 'read' : null);
+                    }
+                }
+            });
+        });
+    });
+    document.querySelectorAll('.toggle-progress-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var url = form.getAttribute('action');
+            fetch(url, { method: 'POST' }).then(function(resp) {
+                if (resp.ok) {
+                    var row = form.closest('tr') || form.closest('.card');
+                    if (row) {
+                        // Toggle button text and style
+                        var btn = form.querySelector('button');
+                        if (btn) {
+                            if (btn.classList.contains('btn-warning')) {
+                                btn.classList.remove('btn-warning');
+                                btn.classList.add('btn-outline-warning');
+                                btn.querySelector('span').textContent = 'Unmark Progress';
+                            } else {
+                                btn.classList.remove('btn-outline-warning');
+                                btn.classList.add('btn-warning');
+                                btn.querySelector('span').textContent = 'Mark In Progress';
+                            }
+                        }
+                        updateStatusBadge(row, btn.classList.contains('btn-outline-warning') ? 'progress' : null);
+                    }
+                }
+            });
+        });
+    });
+
+    // Add Book AJAX (optional: fallback to normal submit if JS fails)
+    document.getElementById('addBookForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var form = e.target;
+        var data = new FormData(form);
+        logAction('add_book', Object.fromEntries(data.entries()));
+        fetch('/', {
+            method: 'POST',
+            body: data
+        }).then(function(resp) {
+            if (resp.redirected) {
+                showToast('Book added successfully!', 'success');
+                window.location.href = resp.url;
+            } else {
+                showToast('Book added!', 'success');
+                window.location.reload();
+            }
+        }).catch(function(err) {
+            logAction('add_book_error', { error: err.toString() });
+            showToast('Failed to add book.', 'error');
+        });
+    });
+
+    // Card view details fix
+    document.querySelectorAll('#bookCardView .btn-info[data-bs-target="#detailsModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var card = btn.closest('.card');
+            if (card) {
+                document.getElementById('detailsTitle').textContent = card.querySelector('.card-title')?.textContent || '';
+                document.getElementById('detailsAuthor').textContent = card.querySelector('.card-text strong:contains("Author")')?.nextSibling?.textContent.trim() || '';
+                document.getElementById('detailsGenre').textContent = card.querySelector('.card-text strong:contains("Genre")')?.nextSibling?.textContent.trim() || '';
+                document.getElementById('detailsRating').textContent = card.querySelector('.card-text strong:contains("Rating")')?.nextSibling?.textContent.trim() || '';
+                document.getElementById('detailsSummary').textContent = card.querySelector('.card-text strong:contains("Summary")')?.nextSibling?.textContent.trim() || '';
+                document.getElementById('detailsPublished').textContent = card.querySelector('.card-text strong:contains("Published")')?.nextSibling?.textContent.trim() || '';
+            }
+        });
+    });
+
+    // Edit Book Modal: fill form on edit button click
+    document.querySelectorAll('button[data-bs-target="#editBookModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var row = btn.closest('tr');
+            var card = btn.closest('.card');
+            var index = btn.getAttribute('data-index');
+            document.getElementById('editIndex').value = index;
+            if (row) {
+                var cells = row.querySelectorAll('td');
+                document.getElementById('editTitle').value = cells[0]?.textContent.trim() || '';
+                document.getElementById('editAuthor').value = cells[1]?.textContent.trim() || '';
+                document.getElementById('editGenre').value = cells[2]?.textContent.trim() || '';
+                document.getElementById('editRating').value = cells[3]?.textContent.trim() || '';
+                document.getElementById('editSummary').value = cells[4]?.textContent.trim() || '';
+                document.getElementById('editPublishedOn').value = cells[5]?.textContent.trim() || '';
+            } else if (card) {
+                document.getElementById('editTitle').value = card.querySelector('.card-title')?.textContent.trim() || '';
+                document.getElementById('editAuthor').value = card.querySelector('.card-text strong:contains("Author")')?.nextSibling?.textContent.trim() || '';
+                document.getElementById('editGenre').value = card.querySelector('.card-text strong:contains("Genre")')?.nextSibling?.textContent.trim() || '';
+                document.getElementById('editRating').value = card.querySelector('.card-text strong:contains("Rating")')?.nextSibling?.textContent.trim() || '';
+                document.getElementById('editSummary').value = card.querySelector('.card-text strong:contains("Summary")')?.nextSibling?.textContent.trim() || '';
+                document.getElementById('editPublishedOn').value = card.querySelector('.card-text strong:contains("Published")')?.nextSibling?.textContent.trim() || '';
+            }
+        });
+    });
+    // Edit Book AJAX submit
+    document.getElementById('editBookForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var form = e.target;
+        var index = document.getElementById('editIndex').value;
+        var data = new FormData(form);
+        logAction('edit_book', { index, ...Object.fromEntries(data.entries()) });
+        fetch('/editBook/' + index, {
+            method: 'POST',
+            body: data
+        }).then(function(resp) {
+            if (resp.ok) {
+                showToast('Book updated!', 'success');
+                // Update the UI in place (list view)
+                var row = document.querySelector('button[data-index="' + index + '"]').closest('tr');
+                if (row) {
+                    var cells = row.querySelectorAll('td');
+                    cells[0].textContent = form.title.value;
+                    cells[1].textContent = form.author.value;
+                    cells[2].textContent = form.genre.value;
+                    cells[3].textContent = form.rating.value;
+                    cells[4].textContent = form.summary.value;
+                    cells[5].textContent = form.publishedOn.value;
+                }
+                // Update the UI in place (card view)
+                var cardBtn = document.querySelector('.card button[data-index="' + index + '"]');
+                if (cardBtn) {
+                    var card = cardBtn.closest('.card');
+                    card.querySelector('.card-title').textContent = form.title.value;
+                    card.querySelector('.card-text strong:contains("Author")').nextSibling.textContent = ' ' + form.author.value;
+                    card.querySelector('.card-text strong:contains("Genre")').nextSibling.textContent = ' ' + form.genre.value;
+                    card.querySelector('.card-text strong:contains("Rating")').nextSibling.textContent = ' ' + form.rating.value;
+                    card.querySelector('.card-text strong:contains("Summary")').nextSibling.textContent = ' ' + form.summary.value;
+                    card.querySelector('.card-text strong:contains("Published")').nextSibling.textContent = ' ' + form.publishedOn.value;
+                }
+                // Robustly close the modal after save
+                setTimeout(function() {
+                    var modalEl = document.getElementById('editBookModal');
+                    if (modalEl) {
+                        var modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                        // Fallback: forcibly hide if needed
+                        modalEl.classList.remove('show');
+                        modalEl.style.display = 'none';
+                        document.body.classList.remove('modal-open');
+                        var backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) backdrop.remove();
+                    }
+                }, 50);
+            } else {
+                showToast('Failed to update book.', 'error');
+            }
+        }).catch(function(err) {
+            logAction('edit_book_error', { index, error: err.toString() });
+            showToast('Failed to update book.', 'error');
+        });
+    });
+    // Borrow AJAX
+    document.getElementById('borrowBookForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var form = e.target;
+        var data = new FormData(form);
+        logAction('borrow_book', Object.fromEntries(data.entries()));
+        fetch('/borrow', {
+            method: 'POST',
+            body: data
+        })
+        .then(resp => resp.json())
+        .then(function(json) {
+            if (json.status === 'ok') {
+                var index = form.index.value;
+                try {
+                    // Update UI: show Borrowed badge, hide Borrow button, show Return button, update borrower info
+                    var row = document.querySelector('button.borrow-btn[data-index="' + index + '"]')?.closest('tr');
+                    if (row) {
+                        row.querySelector('.badge.bg-success')?.classList.replace('bg-success', 'bg-danger');
+                        row.querySelector('.badge.bg-danger').textContent = 'Borrowed';
+                        row.querySelector('button.borrow-btn[data-index="' + index + '"]').style.display = 'none';
+                        row.querySelector('button.return-btn[data-index="' + index + '"]').style.display = '';
+                        row.querySelector('.borrower-cell').textContent = form.borrower.value;
+                        row.querySelector('.borrowed-date-cell').textContent = form.borrowedDate.value;
+                        row.querySelector('.due-date-cell').textContent = form.dueDate.value;
+                    }
+                    var cardBtn = document.querySelector('.card button.borrow-btn[data-index="' + index + '"]');
+                    if (cardBtn) {
+                        var card = cardBtn.closest('.card');
+                        var badge = card.querySelector('.card-text .badge');
+                        if (badge) { badge.classList.replace('bg-success', 'bg-danger'); badge.textContent = 'Borrowed'; }
+                        cardBtn.style.display = 'none';
+                        card.querySelector('button.return-btn[data-index="' + index + '"]').style.display = '';
+                        card.querySelector('.borrower-cell').textContent = form.borrower.value;
+                        card.querySelector('.borrowed-date-cell').textContent = form.borrowedDate.value;
+                        card.querySelector('.due-date-cell').textContent = form.dueDate.value;
+                    }
+                } catch (err) {
+                    console.error('UI update failed:', err);
+                    window.location.reload(); // fallback
+                }
+                // Always close modal
+                setTimeout(function() {
+                    var modalEl = document.getElementById('borrowBookModal');
+                    if (modalEl) {
+                        var modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                        modalEl.classList.remove('show');
+                        modalEl.style.display = 'none';
+                        document.body.classList.remove('modal-open');
+                        var backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) backdrop.remove();
+                    }
+                }, 50);
+            } else {
+                logAction('borrow_book_error', { error: json.message });
+                showToast(json.message || 'Failed to borrow book.', 'error');
+            }
+        })
+        .catch(function(err) {
+            logAction('borrow_book_error', { error: err.toString() });
+            showToast('Failed to borrow book.', 'error');
+        });
+    });
+    // Unborrow AJAX
+    document.querySelectorAll('button.return-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var index = btn.getAttribute('data-index');
+            logAction('return_book', { index });
+            fetch('/return/' + index, { method: 'POST' })
+                .then(resp => resp.json())
+                .then(function(json) {
+                    if (json.status === 'ok') {
+                        try {
+                            // Update UI: show Available badge, show Borrow button, hide Return button
+                            var row = document.querySelector('button.return-btn[data-index="' + index + '"]')?.closest('tr');
+                            if (row) {
+                                row.querySelector('.badge.bg-danger')?.classList.replace('bg-danger', 'bg-success');
+                                row.querySelector('.badge.bg-success').textContent = 'Available';
+                                row.querySelector('button.borrow-btn[data-index="' + index + '"]').style.display = '';
+                                row.querySelector('button.return-btn[data-index="' + index + '"]').style.display = 'none';
+                                row.querySelector('.borrower-cell').textContent = '-';
+                                row.querySelector('.borrowed-date-cell').textContent = '-';
+                                row.querySelector('.due-date-cell').textContent = '-';
+                            }
+                            var cardBtn = document.querySelector('.card button.return-btn[data-index="' + index + '"]');
+                            if (cardBtn) {
+                                var card = cardBtn.closest('.card');
+                                var badge = card.querySelector('.card-text .badge');
+                                if (badge) { badge.classList.replace('bg-danger', 'bg-success'); badge.textContent = 'Available'; }
+                                card.querySelector('button.borrow-btn[data-index="' + index + '"]').style.display = '';
+                                cardBtn.style.display = 'none';
+                                card.querySelector('.borrower-cell').textContent = '-';
+                                card.querySelector('.borrowed-date-cell').textContent = '-';
+                                card.querySelector('.due-date-cell').textContent = '-';
+                            }
+                        } catch (err) {
+                            console.error('UI update failed:', err);
+                            window.location.reload(); // fallback
+                        }
+                    } else {
+                        logAction('return_book_error', { index, error: json.message });
+                        showToast(json.message || 'Failed to return book.', 'error');
+                    }
+                })
+                .catch(function(err) {
+                    logAction('return_book_error', { index, error: err.toString() });
+                    showToast('Failed to return book.', 'error');
+                });
+        });
+    });
+
+    // Detailed loggers for all major UI actions
+    document.querySelectorAll('.toggle-read-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            var index = form.closest('tr')?.querySelector('button.borrow-btn,button.return-btn')?.getAttribute('data-index') || 'unknown';
+            logAction('toggle_read', { index });
+        });
+    });
+    document.querySelectorAll('.toggle-progress-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            var index = form.closest('tr')?.querySelector('button.borrow-btn,button.return-btn')?.getAttribute('data-index') || 'unknown';
+            logAction('toggle_progress', { index });
+        });
+    });
+    document.querySelectorAll('.btn-danger.delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var index = btn.closest('tr')?.querySelector('button.borrow-btn,button.return-btn')?.getAttribute('data-index') || 'unknown';
+            logAction('delete_book', { index });
+        });
+    });
+    document.querySelectorAll('button[data-bs-target="#editBookModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var index = btn.getAttribute('data-index');
+            logAction('open_edit_modal', { index });
+        });
+    });
+    document.querySelectorAll('button[data-bs-target="#detailsModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var index = btn.getAttribute('data-index');
+            logAction('open_details_modal', { index });
+        });
+    });
+    document.querySelector('.search-bar button.btn-info').addEventListener('click', function() {
+        const title = document.getElementById('searchTitle').value;
+        const author = document.getElementById('searchAuthor').value;
+        const genre = document.getElementById('searchGenre').value;
+        const rating = document.getElementById('searchRating').value;
+        logAction('search', { title, author, genre, rating });
+        showToast('Search applied', 'info');
+    });
+</script>
+</body>
+</html> 

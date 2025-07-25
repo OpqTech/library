@@ -1,0 +1,9 @@
+.git/
+.gitignore
+README.md
+*.iml
+*.log
+*.md
+*.jpg
+.idea/
+.DS_Store 
