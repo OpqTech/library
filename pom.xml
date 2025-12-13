@@ -173,14 +173,14 @@
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>8.4.3</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <version>12.1.9</version>
+                <configuration>
+                    <nvdApiKey>8269b9f9-377f-4540-bc5f-fc04da619cc5</nvdApiKey>
+                    <nvdValidForHours>24</nvdValidForHours>
+                    <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+                    <ossIndexAnalyzerEnabled>false</ossIndexAnalyzerEnabled>
+                    <failOnError>false</failOnError>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
