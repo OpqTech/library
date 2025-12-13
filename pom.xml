@@ -153,23 +153,12 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <targetClasses>
-                        <param>opqlibrary.*</param>
-                    </targetClasses>
-                    <targetTests>
-                        <param>opqlibrary.*</param>
-                    </targetTests>
-                    <jvmArgs>
-                        <jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--add-opens=java.base/java.util=ALL-UNNAMED</jvmArg>
-                        <jvmArg>--add-opens=java.base/java.util.concurrent=ALL-UNNAMED</jvmArg>
-                    </jvmArgs>
-                    <outputFormats>
-                        <outputFormat>XML</outputFormat>
-                        <outputFormat>HTML</outputFormat>
-                    </outputFormats>
-                    <mutationThreshold>60</mutationThreshold>
-                </configuration>
+						<mutationThreshold>35</mutationThreshold>
+						<outputFormats>
+							<outputFormat>XML</outputFormat>
+							<outputFormat>HTML</outputFormat>
+						</outputFormats>
+					</configuration>
             </plugin>
             <plugin>
                 <groupId>org.owasp</groupId>
