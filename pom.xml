@@ -168,6 +168,7 @@
                         <outputFormat>XML</outputFormat>
                         <outputFormat>HTML</outputFormat>
                     </outputFormats>
+                    <mutationThreshold>60</mutationThreshold>
                 </configuration>
             </plugin>
             <plugin>
@@ -180,6 +181,7 @@
                     <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
                     <ossIndexAnalyzerEnabled>false</ossIndexAnalyzerEnabled>
                     <failOnError>false</failOnError>
+                    <format>XML</format>
                 </configuration>
             </plugin>
             <plugin>
