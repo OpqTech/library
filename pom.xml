@@ -144,7 +144,7 @@
             <plugin>
                 <groupId>org.pitest</groupId>
                 <artifactId>pitest-maven</artifactId>
-                <version>1.15.2</version>
+                <version>1.9.11</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.pitest</groupId>
@@ -161,8 +161,8 @@
                     </targetTests>
                     <mutationThreshold>35</mutationThreshold>
                     <outputFormats>
-                        <outputFormat>XML</outputFormat>
-                        <outputFormat>HTML</outputFormat>
+                        <param>XML</param>
+                        <param>HTML</param>
                     </outputFormats>
                     <jvmArgs>
                         <jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
